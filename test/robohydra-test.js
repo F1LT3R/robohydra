@@ -1422,7 +1422,7 @@ describe("Request object", function() {
     });
 
     describe("body property", function() {
-        it("is a simple buffer for useless content-type headers", function() {
+        it("is null for useless content-type headers", function() {
             var data = new Buffer("Here is some data"),
                 reqNoCT = new Request({url: '/foo/bar', rawBody: data}),
                 reqEmptyCT = new Request({url: '/foo/bar',
@@ -1433,16 +1433,20 @@ describe("Request object", function() {
                                             headers: {'content-type': 'blah'}}),
                 reqOctetStm = new Request({url: '/foo/bar',
                                            rawBody: data,
-                                           headers: {'content-type': 'application/octet-stream'}});
+                                           headers: {'content-type': 'application/octet-stream'}}),
+                reqTextXml = new Request({url: '/foo/bar',
+                                          rawBody: new Buffer("<madeup/>"),
+                                          headers: {'content-type': 'application/octet-stream'}});
 
-            expect(reqNoCT.body).toEqual(data);
-            expect(reqEmptyCT.body).toEqual(data);
-            expect(reqInvalidCT.body).toEqual(data);
-            expect(reqOctetStm.body).toEqual(data);
+            expect(reqNoCT.body).toEqual(null);
+            expect(reqEmptyCT.body).toEqual(null);
+            expect(reqInvalidCT.body).toEqual(null);
+            expect(reqOctetStm.body).toEqual(null);
+            expect(reqTextXml.body).toEqual(null);
         });
 
         it("is an object for 'application/json' content type", function() {
-            var obj = { a: 'banana' };
+            var obj = {a: 'banana'};
             var data = new Buffer(JSON.stringify(obj));
             var req = new Request({url: '/foo/bar',
                                    rawBody: data,
@@ -1544,6 +1548,14 @@ describe("Request object", function() {
                                              'charset': targetCharset }});    
             }).not.toThrow();
             expect(htmlreq.body).toEqual(null);
+        });
+
+        it("check that body parses x-www-form-urlencoded, too", function () {
+            var req = new Request({url: '/',
+                                   rawBody: "foo=bar&qux=fluxx",
+                                   headers: {'content-type': 'x-www-form-urlencoded'}});
+            expect(req.body.foo).toEqual("bar");
+            expect(req.body.qux).toEqual("fluxx");
         });
     });
 });
